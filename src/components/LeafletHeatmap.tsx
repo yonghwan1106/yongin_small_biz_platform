@@ -18,9 +18,14 @@ export default function LeafletHeatmap({ center, heatmapData }: LeafletHeatmapPr
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
+    // CSS는 별도로 로드
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+    document.head.appendChild(link);
+
     Promise.all([
       import('leaflet'),
-      import('leaflet/dist/leaflet.css'),
       import('leaflet.heat')
     ]).then(([L]) => {
       setLeaflet(L.default || L);
