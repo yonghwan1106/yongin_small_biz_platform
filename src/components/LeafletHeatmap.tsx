@@ -1,17 +1,7 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Location, GyeonggiFootTrafficData } from '@/types';
-
-// Leaflet은 클라이언트에서만 로드
-let L: any;
-let heatLayerPlugin: any;
-
-if (typeof window !== 'undefined') {
-  L = require('leaflet');
-  require('leaflet/dist/leaflet.css');
-  require('leaflet.heat');
-}
 
 interface LeafletHeatmapProps {
   center: Location;
@@ -20,24 +10,40 @@ interface LeafletHeatmapProps {
 
 export default function LeafletHeatmap({ center, heatmapData }: LeafletHeatmapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstance = useRef<L.Map | null>(null);
+  const mapInstance = useRef<any>(null);
   const heatLayerRef = useRef<any>(null);
+  const [leaflet, setLeaflet] = useState<any>(null);
+
+  // Leaflet 동적 로드
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    Promise.all([
+      import('leaflet'),
+      import('leaflet/dist/leaflet.css'),
+      import('leaflet.heat')
+    ]).then(([L]) => {
+      setLeaflet(L.default || L);
+    }).catch(err => {
+      console.error('Failed to load Leaflet:', err);
+    });
+  }, []);
 
   // 지도 초기화
   useEffect(() => {
-    if (!mapRef.current || mapInstance.current || !L) return;
+    if (!mapRef.current || mapInstance.current || !leaflet) return;
 
     // Leaflet 지도 생성
-    const map = L.map(mapRef.current).setView([center.lat, center.lng], 15);
+    const map = leaflet.map(mapRef.current).setView([center.lat, center.lng], 15);
 
     // OpenStreetMap 타일 추가
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    leaflet.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       maxZoom: 19,
     }).addTo(map);
 
     // 중심 마커 추가
-    const centerMarker = L.marker([center.lat, center.lng])
+    leaflet.marker([center.lat, center.lng])
       .addTo(map)
       .bindPopup('<strong>내 가게</strong>')
       .openPopup();
@@ -51,11 +57,11 @@ export default function LeafletHeatmap({ center, heatmapData }: LeafletHeatmapPr
         mapInstance.current = null;
       }
     };
-  }, [center.lat, center.lng]);
+  }, [center.lat, center.lng, leaflet]);
 
   // 히트맵 데이터 업데이트
   useEffect(() => {
-    if (!mapInstance.current || !heatmapData || heatmapData.length === 0 || !L) {
+    if (!mapInstance.current || !heatmapData || heatmapData.length === 0 || !leaflet) {
       console.log('🗺️ Heatmap data not available:', {
         hasMap: !!mapInstance.current,
         hasData: !!heatmapData,
@@ -103,7 +109,7 @@ export default function LeafletHeatmap({ center, heatmapData }: LeafletHeatmapPr
     });
 
     // @ts-ignore - leaflet.heat 타입 정의 없음
-    const heatLayer = L.heatLayer(heatPoints, {
+    const heatLayer = leaflet.heatLayer(heatPoints, {
       radius: 30,
       blur: 25,
       maxZoom: 17,
@@ -124,7 +130,7 @@ export default function LeafletHeatmap({ center, heatmapData }: LeafletHeatmapPr
       const offsetLat = (Math.random() - 0.5) * 0.003;
       const offsetLng = (Math.random() - 0.5) * 0.003;
 
-      const marker = L.circleMarker([center.lat + offsetLat, center.lng + offsetLng], {
+      const marker = leaflet.circleMarker([center.lat + offsetLat, center.lng + offsetLng], {
         radius: 8,
         fillColor: traffic / maxTraffic > 0.7 ? '#EF4444' :
                    traffic / maxTraffic > 0.4 ? '#F59E0B' : '#FCD34D',
@@ -142,7 +148,7 @@ export default function LeafletHeatmap({ center, heatmapData }: LeafletHeatmapPr
       .addTo(mapInstance.current!);
     });
 
-  }, [heatmapData, center.lat, center.lng]);
+  }, [heatmapData, center.lat, center.lng, leaflet]);
 
   return (
     <div className="relative w-full h-full">
