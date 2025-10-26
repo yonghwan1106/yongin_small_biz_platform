@@ -1,0 +1,25 @@
+# Large data files
+docs/
+*.csv
+
+# Scripts (only needed for local processing)
+scripts/parse-gyeonggi-data.js
+scripts/upload-gyeonggi-to-sheets.js
+scripts/view-gyeonggi-data.js
+
+# Development files
+.env.local
+.git
+.github
+node_modules
+README.md
+
+# Test files
+*.test.ts
+*.test.tsx
+__tests__
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
