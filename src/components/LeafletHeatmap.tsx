@@ -1,10 +1,17 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-import 'leaflet.heat';
 import { Location, GyeonggiFootTrafficData } from '@/types';
+
+// Leaflet은 클라이언트에서만 로드
+let L: any;
+let heatLayerPlugin: any;
+
+if (typeof window !== 'undefined') {
+  L = require('leaflet');
+  require('leaflet/dist/leaflet.css');
+  require('leaflet.heat');
+}
 
 interface LeafletHeatmapProps {
   center: Location;
@@ -18,7 +25,7 @@ export default function LeafletHeatmap({ center, heatmapData }: LeafletHeatmapPr
 
   // 지도 초기화
   useEffect(() => {
-    if (!mapRef.current || mapInstance.current) return;
+    if (!mapRef.current || mapInstance.current || !L) return;
 
     // Leaflet 지도 생성
     const map = L.map(mapRef.current).setView([center.lat, center.lng], 15);
@@ -48,7 +55,7 @@ export default function LeafletHeatmap({ center, heatmapData }: LeafletHeatmapPr
 
   // 히트맵 데이터 업데이트
   useEffect(() => {
-    if (!mapInstance.current || !heatmapData || heatmapData.length === 0) {
+    if (!mapInstance.current || !heatmapData || heatmapData.length === 0 || !L) {
       console.log('🗺️ Heatmap data not available:', {
         hasMap: !!mapInstance.current,
         hasData: !!heatmapData,
