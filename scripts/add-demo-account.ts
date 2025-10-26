@@ -11,7 +11,7 @@ async function addDemoAccount() {
       email: 'demo2@example.com',
       passwordHash,
       storeName: '행복한 카페',
-      storeCategory: '음식점',
+      storeCategory: '외식업',
       storeAddress: '경기도 용인시 수지구 풍덕천로 147',
       storeLatLng: '', // Geocoding API가 자동으로 변환
       marketingConsent: true,
