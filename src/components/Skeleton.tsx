@@ -33,16 +33,18 @@ export function SkeletonCard() {
   );
 }
 
+const SKELETON_HEIGHTS = [65, 85, 55, 75, 90, 70, 80]; // 고정된 높이 값
+
 export function SkeletonChart() {
   return (
     <div className="bg-white shadow rounded-lg p-6">
       <Skeleton className="h-6 w-48 mb-4" />
       <div className="h-80 flex items-end justify-between gap-2">
-        {[...Array(7)].map((_, i) => (
+        {SKELETON_HEIGHTS.map((height, i) => (
           <Skeleton
             key={i}
             className="flex-1"
-            style={{ height: `${Math.random() * 60 + 40}%` }}
+            style={{ height: `${height}%` }}
           />
         ))}
       </div>

@@ -61,9 +61,38 @@ export default function DashboardPage() {
             return;
           }
 
-          // 가게 위치 파싱
-          if (data.data.storeLatLng) {
+          // 가게 위치 설정
+          if (data.data.storeAddress) {
+            // Naver Geocoding API를 사용해서 주소를 정확한 좌표로 변환
+            console.log('📍 Converting address to coordinates:', data.data.storeAddress);
+
+            fetch(`/api/geocode?address=${encodeURIComponent(data.data.storeAddress)}`)
+              .then(res => res.json())
+              .then(geocodeData => {
+                if (geocodeData.success && geocodeData.data) {
+                  console.log('✅ Geocoding successful:', geocodeData.data);
+                  setStoreLocation(geocodeData.data);
+                } else {
+                  // Geocoding 실패 시 기존 좌표 사용 (fallback)
+                  console.warn('⚠️ Geocoding failed, using stored coordinates');
+                  if (data.data.storeLatLng) {
+                    const [lat, lng] = data.data.storeLatLng.split(',').map(Number);
+                    setStoreLocation({ lat, lng });
+                  }
+                }
+              })
+              .catch(err => {
+                console.error('❌ Geocoding error:', err);
+                // 에러 시 기존 좌표 사용 (fallback)
+                if (data.data.storeLatLng) {
+                  const [lat, lng] = data.data.storeLatLng.split(',').map(Number);
+                  setStoreLocation({ lat, lng });
+                }
+              });
+          } else if (data.data.storeLatLng) {
+            // 주소가 없으면 기존 좌표 사용
             const [lat, lng] = data.data.storeLatLng.split(',').map(Number);
+            console.log('📍 Using stored coordinates:', { lat, lng });
             setStoreLocation({ lat, lng });
           }
 
@@ -230,9 +259,9 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* KPI Cards */}
+        {/* KPI Cards - 상단 가로 배치 */}
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 mb-8">
-          {/* Card 1: 오늘 유동인구 */}
+          {/* Card 1: 오늘의 유동인구 */}
           <div className="bg-white overflow-hidden shadow rounded-lg">
             <div className="p-5">
               <div className="flex items-center">
@@ -242,7 +271,7 @@ export default function DashboardPage() {
                 <div className="ml-5 w-0 flex-1">
                   <dl>
                     <dt className="text-sm font-medium text-gray-500 truncate">
-                      오늘 유동인구
+                      오늘의 유동인구
                     </dt>
                     <dd className="flex items-baseline">
                       <div className="text-2xl font-semibold text-gray-900">
@@ -362,42 +391,59 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Map & Chart Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-6 sm:mb-8">
-          {/* Heatmap */}
-          <div className="bg-white shadow rounded-lg p-4 sm:p-6">
-            <h2 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">
+        {/* Full-width Heatmap Section - 히트맵 크게 */}
+        <div className="bg-white shadow rounded-lg p-4 sm:p-6 mb-6 sm:mb-8">
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <h2 className="text-base sm:text-lg font-medium text-gray-900">
               🗺️ 상권 활력 지수 히트맵
             </h2>
-            <div className="h-64 sm:h-80">
-              {storeLocation ? (
-                <LeafletHeatmap center={storeLocation} heatmapData={heatmapData} />
-              ) : (
-                <div className="bg-gray-100 rounded-lg h-full flex items-center justify-center">
-                  <div className="text-center">
-                    <p className="text-gray-500 mb-2">위치 정보 로딩 중...</p>
-                  </div>
-                </div>
-              )}
-            </div>
+            <button
+              onClick={() => {
+                const elem = document.getElementById('heatmap-container');
+                if (elem) {
+                  if (document.fullscreenElement) {
+                    document.exitFullscreen();
+                  } else {
+                    elem.requestFullscreen();
+                  }
+                }
+              }}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+              </svg>
+              <span>전체화면</span>
+            </button>
           </div>
-
-          {/* Chart */}
-          <div className="bg-white shadow rounded-lg p-4 sm:p-6">
-            <h2 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">
-              📈 유동인구 추이 (최근 7일)
-            </h2>
-            <div className="h-64 sm:h-80">
-              {chartData.length > 0 ? (
-                <FootTrafficChart data={chartData} />
-              ) : (
-                <div className="bg-gray-100 rounded-lg h-full flex items-center justify-center">
-                  <div className="text-center">
-                    <p className="text-gray-500 mb-2">차트 데이터 로딩 중...</p>
-                  </div>
+          <div id="heatmap-container" className="h-[600px]">
+            {storeLocation ? (
+              <LeafletHeatmap center={storeLocation} heatmapData={heatmapData} />
+            ) : (
+              <div className="bg-gray-100 rounded-lg h-full flex items-center justify-center">
+                <div className="text-center">
+                  <p className="text-gray-500 mb-2">위치 정보 로딩 중...</p>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Chart Section */}
+        <div className="bg-white shadow rounded-lg p-4 sm:p-6 mb-6 sm:mb-8">
+          <h2 className="text-base sm:text-lg font-medium text-gray-900 mb-3 sm:mb-4">
+            📈 유동인구 추이 (최근 7일)
+          </h2>
+          <div className="h-64 sm:h-80">
+            {chartData.length > 0 ? (
+              <FootTrafficChart data={chartData} />
+            ) : (
+              <div className="bg-gray-100 rounded-lg h-full flex items-center justify-center">
+                <div className="text-center">
+                  <p className="text-gray-500 mb-2">차트 데이터 로딩 중...</p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

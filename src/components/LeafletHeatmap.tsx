@@ -24,11 +24,17 @@ export default function LeafletHeatmap({ center, heatmapData }: LeafletHeatmapPr
     link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
     document.head.appendChild(link);
 
-    Promise.all([
-      import('leaflet'),
-      import('leaflet.heat')
-    ]).then(([L]) => {
-      setLeaflet(L.default || L);
+    // Leaflet을 먼저 로드한 후, leaflet.heat을 로드
+    import('leaflet').then((L) => {
+      const leafletLib = L.default || L;
+
+      // leaflet을 전역에 설정 (leaflet.heat이 필요로 함)
+      (window as any).L = leafletLib;
+
+      // leaflet.heat 로드
+      return import('leaflet.heat').then(() => leafletLib);
+    }).then((leafletLib) => {
+      setLeaflet(leafletLib);
     }).catch(err => {
       console.error('Failed to load Leaflet:', err);
     });
@@ -161,7 +167,7 @@ export default function LeafletHeatmap({ center, heatmapData }: LeafletHeatmapPr
         ref={mapRef}
         style={{
           width: '100%',
-          height: '320px',
+          height: '100%',
         }}
       />
 
